@@ -1,0 +1,584 @@
+\documentclass[10pt]{article}
+
+% packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin = 1in]{geometry}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{apacite}
+\usepackage{url}
+\usepackage{amstext}
+\usepackage[justification=raggedright]{caption}
+\usepackage[flushleft]{threeparttable}
+\usepackage{longtable}
+\usepackage{fancyhdr}
+
+\pagestyle{fancy}
+\rhead{{\itshape Replication tables for Doyle \& Skinner (2016)} $\mid$ \thepage}
+\cfoot{}
+\renewcommand{\headrulewidth}{0pt}
+
+% new commands
+\newcommand{\boldbeta}{\boldsymbol{\beta}}
+\newcommand{\boldgamma}{\boldsymbol{\gamma}}
+\newcommand{\boldBeta}{\boldsymbol{B}}
+\newcommand{\boldalpha}{\boldsymbol{\alpha}}
+\newcommand{\bolddelta}{\boldsymbol{\delta}}
+\newcommand{\boldeta}{\boldsymbol{\eta}}
+\newcommand{\boldpsi}{\boldsymbol{\psi}}
+\newcommand{\boldx}{\mathbf{x}}
+\newcommand{\boldz}{\mathbf{z}}
+\newcommand{\boldw}{\mathbf{w}}
+\newcommand{\boldX}{\mathbf{X}}
+\newcommand{\boldy}{\mathbf{y}}
+\newcommand{\boldY}{\mathbf{Y}}
+\newcommand{\boldc}{\mathbf{c}}
+\newcommand{\boldp}{\boldsymbol{p}}
+\newcommand{\boldF}{\boldsymbol{F}}
+
+\newcommand{\RR}{\raggedright\arraybackslash} % Allows left align in tables
+\newcommand{\RL}{\raggedleft\arraybackslash} % Allows right align in tables
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Begin document
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+<<setup, include=FALSE, cache=FALSE, message = FALSE>>=
+## libraries
+library(knitr)
+library(xtable)
+
+## directories
+estdir <- '../output/'
+
+# set global chunk options
+opts_chunk$set(fig.align = 'center', fig.show = 'hold', echo = F)
+@
+
+<<csv2texfunction>>=
+## function to convert csv matrix to TeX matrix (content only)
+csv2tex <- function(csvfile, header = FALSE, rounding = NULL,
+                    parenrows = NULL, rnames = NULL, hlines = NULL,
+                    btmidrule = NULL) {
+
+    ## read the csv as lines
+    foo <- readLines(csvfile)
+
+    ## drop the header line (assumes yes)
+    if (!header) {
+        foo <- foo[-1]
+    }
+
+    ## clean each line
+    foo <- unlist(lapply(foo, function(x) {
+
+        ## split row by comma
+        x <- strsplit(x, split = ',')
+
+        ## convert each element to numeric so can be rounded
+        x <- sapply(x, function(xx) {
+            xx <- as.numeric(xx)
+            if(!is.null(rounding)) {
+                xx <- round(xx, rounding)
+            }
+            xx <- as.character(xx)
+        })
+
+        ## paste back together with & between
+        x <- paste(x, collapse = '&')
+
+    }))
+
+    ## add parentheses to selected rows (if any)
+    if (!is.null(parenrows)) {
+        for (r in parenrows) {
+            foo[r] <- strsplit(foo[r], split = '&')
+            foo[[r]] <- gsub('(.*)', '(\\1)', foo[[r]])
+            foo[[r]] <- gsub('\\(NA\\)', ' ', foo[[r]])
+            foo[[r]] <- paste(foo[[r]], collapse = '&')
+            foo <- unlist(foo)
+        }
+    }
+
+    ## clean out NA
+    foo <- unlist(lapply(foo, function(x) {gsub('NA', ' ', x)}))
+
+    ## add rownames (if any)
+    if (!is.null(rownames)) {
+        for (n in 1:length(rnames)) {
+            foo[n] <- gsub('(.*)', paste(rnames[n], '\\1', sep = '&'), foo[n])
+        }
+    }
+
+    ## add \\\\ to the end of each line
+    foo <- unlist(lapply(foo, function(x) paste0(x, '\\\\')))
+
+    ## add horizontal lines (if any wanted)
+    if (!is.null(hlines) | !is.null(btmidrule)) {
+
+        ## append hlines after rows selected
+        for (hl in hlines) {
+            foo <- append(foo, '\\hline', hl)
+        }
+        ## append midrule after rows selected
+        for (mr in btmidrule) {
+            foo <- append(foo, '\\midrule', mr)
+        }
+    }
+
+    ## return
+    return(foo)
+
+}
+
+## effectively turn of scientific notation
+options(scipen = 999)
+@
+
+\thispagestyle{empty}
+\begin{center}
+{\LARGE Replication Tables}
+\end{center}
+\vspace{2em}
+\hangindent=\parindent
+\hangafter=1
+\noindent Doyle, W.R. and Skinner, B.T. (2016). Estimating the
+education-earnings equation using geographic variation. Economics of
+Education Review.
+
+
+\clearpage
+
+<<rowcolnames>>=
+fsrnames <- c('Public 4-year in county','',
+              '$\\\\ldots\\\\times$ mother\'s education','',
+              'Endogeneity: $F$ p-value','Overidentification: $\\\\chi^2$ p-value',
+              'First stage $F$', 'First stage min. eigenvalue','$N$',
+
+              'Public 2-year in county','',
+              '$\\\\ldots\\\\times$ mother\'s education','',
+              'Endogeneity: $F$ p-value','Overidentification: $\\\\chi^2$ p-value',
+              'First stage $F$', 'First stage min. eigenvalue','$N$',
+
+              'Inverse log distance to in-state pub. 2year','',
+              '$\\\\ldots\\\\times$ mother\'s education','',
+              'Endogeneity: $F$ p-value','Overidentification: $\\\\chi^2$ p-value',
+              'First stage $F$', 'First stage min. eigenvalue','$N$',
+
+              'Distance-weighted tuition: in-state pub. 2year','',
+              '$\\\\ldots\\\\times$ mother\'s education','',
+              'Endogeneity: $F$ p-value','Overidentification: $\\\\chi^2$ p-value',
+              'First stage $F$', 'First stage min. eigenvalue','$N$',
+
+              'Distance-weighted enrollment: in-state pub. 2year','',
+              '$\\\\ldots\\\\times$ mother\'s education','',
+              'Endogeneity: $F$ p-value','Overidentification: $\\\\chi^2$ p-value',
+              'First stage $F$', 'First stage min. eigenvalue','$N$',
+
+              'Inverse log distance to all colleges in country','',
+              '$\\\\ldots\\\\times$ mother\'s education','',
+              'Endogeneity: $F$ p-value','Overidentification: $\\\\chi^2$ p-value',
+              'First stage $F$', 'First stage min. eigenvalue','$N$')
+
+ssrnames <- c('Years of college','',
+              'Public 4-year in county','',
+              'Public 2-year in county','',
+              'Inverse log distance: in-state pub. 2yr','',
+              'Inverse log distance: all colleges','',
+              'Dist.-weight. tuition: in-state pub. 2yr','',
+              'Dist.-weight. enroll.: in-state pub. 2yr', '')
+
+fsparenrows <- c(2,4, 11,13, 20,22, 29,31, 38,40, 47,49)
+fsbtmidrule <- c(9, 19, 29, 39, 49)
+
+ssparenrows <- c(2,4,6,8,10,12,14)
+
+@
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOG YEARLY INCOME
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% -----------------------------------------------------------------------------
+%% Full sample
+%% -----------------------------------------------------------------------------
+
+%% Log Yearly Income: 1st stage table
+\begin{longtable}{>{\RR}p{3.6in}*{4}{c}}
+  \caption{2SLS first stage estimates for log yearly income} \\
+  \toprule
+    %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endfirsthead % End of first header
+  \multicolumn{2}{l}{\emph{... table \thetable{} continued}} \\ % pb header
+  \toprule
+  %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endhead % all headers finished
+  \bottomrule % putting in footer before content (way this table works)
+  \multicolumn{2}{r}{\emph{Continued on next page...}}\\ % pb footer
+  \endfoot % end of footer
+  \endlastfoot % since the footer won't change, we can just finish all footers
+  %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lyinc_both_fsmat.csv'), rounding = 4,
+                  parenrows = fsparenrows, rnames = fsrnames, btmidrule = fsbtmidrule)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+\end{longtable}
+
+%% Log Yearly Income: 2nd Stage table
+\begin{table}[!hb]
+{\footnotesize
+  \caption{2SLS second stage estimates for log yearly income}
+  \begin{tabularx}{\linewidth}{X*{8}{c}}
+    \toprule
+    %% Year headers
+    & \multicolumn{2}{c}{2007} & \multicolumn{2}{c}{2008}
+    & \multicolumn{2}{c}{2009} & \multicolumn{2}{c}{2010} \\
+    \cmidrule(r){2-3}\cmidrule(r){4-5}\cmidrule(r){6-7}\cmidrule(r){8-9}
+    %% Model headers
+    & OLS & IV & OLS & IV & OLS & IV & OLS & IV \\
+    \midrule
+    %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lyinc_both_ssmat.csv'), rounding = 3,
+                  parenrows = ssparenrows, rnames = ssrnames)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+  \end{tabularx}}
+\end{table}
+
+\clearpage
+
+%% -----------------------------------------------------------------------------
+%% Men
+%% -----------------------------------------------------------------------------
+
+%% Log Yearly Income: 1st stage table
+\begin{longtable}{>{\RR}p{3.6in}*{4}{c}}
+  \caption{2SLS first stage estimates for log yearly income (MEN)} \\
+  \toprule
+    %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endfirsthead % End of first header
+  \multicolumn{2}{l}{\emph{... table \thetable{} continued}} \\ % pb header
+  \toprule
+  %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endhead % all headers finished
+  \bottomrule % putting in footer before content (way this table works)
+  \multicolumn{2}{r}{\emph{Continued on next page...}}\\ % pb footer
+  \endfoot % end of footer
+  \endlastfoot % since the footer won't change, we can just finish all footers
+  %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lyinc_males_fsmat.csv'), rounding = 4,
+                  parenrows = fsparenrows, rnames = fsrnames, btmidrule = fsbtmidrule)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+\end{longtable}
+
+%% Log Yearly Income: 2nd Stage table
+\begin{table}[!hb]
+{\footnotesize
+  \caption{2SLS second stage estimates for log yearly income (MEN)}
+  \begin{tabularx}{\linewidth}{X*{8}{c}}
+    \toprule
+    %% Year headers
+    & \multicolumn{2}{c}{2007} & \multicolumn{2}{c}{2008}
+    & \multicolumn{2}{c}{2009} & \multicolumn{2}{c}{2010} \\
+    \cmidrule(r){2-3}\cmidrule(r){4-5}\cmidrule(r){6-7}\cmidrule(r){8-9}
+    %% Model headers
+    & OLS & IV & OLS & IV & OLS & IV & OLS & IV \\
+    \midrule
+    %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lyinc_males_ssmat.csv'), rounding = 3,
+                  parenrows = ssparenrows, rnames = ssrnames)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+    \end{tabularx}}
+\end{table}
+
+\clearpage
+
+%% -----------------------------------------------------------------------------
+%% Women
+%% -----------------------------------------------------------------------------
+
+%% Log Yearly Income: 1st stage table
+\begin{longtable}{>{\RR}p{3.6in}*{4}{c}}
+  \caption{2SLS first stage estimates for log yearly income (WOMEN)} \\
+  \toprule
+    %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endfirsthead % End of first header
+  \multicolumn{2}{l}{\emph{... table \thetable{} continued}} \\ % pb header
+  \toprule
+  %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endhead % all headers finished
+  \bottomrule % putting in footer before content (way this table works)
+  \multicolumn{2}{r}{\emph{Continued on next page...}}\\ % pb footer
+  \endfoot % end of footer
+  \endlastfoot % since the footer won't change, we can just finish all footers
+  %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lyinc_females_fsmat.csv'), rounding = 4,
+                  parenrows = fsparenrows, rnames = fsrnames, btmidrule = fsbtmidrule)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+\end{longtable}
+
+%% Log Yearly Income: 2nd Stage table
+\begin{table}[!hb]
+{\footnotesize
+  \caption{2SLS second stage estimates for log yearly income (WOMEN)}
+  \begin{tabularx}{\linewidth}{X*{8}{c}}
+    \toprule
+    %% Year headers
+    & \multicolumn{2}{c}{2007} & \multicolumn{2}{c}{2008}
+    & \multicolumn{2}{c}{2009} & \multicolumn{2}{c}{2010} \\
+    \cmidrule(r){2-3}\cmidrule(r){4-5}\cmidrule(r){6-7}\cmidrule(r){8-9}
+    %% Model headers
+    & OLS & IV & OLS & IV & OLS & IV & OLS & IV \\
+    \midrule
+    %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lyinc_females_ssmat.csv'), rounding = 3,
+                  parenrows = ssparenrows, rnames = ssrnames)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+  \end{tabularx}}
+\end{table}
+
+\clearpage
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% LOG WAGES
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% -----------------------------------------------------------------------------
+%% Full sample
+%% -----------------------------------------------------------------------------
+
+%% Log Wages: 1st stage table
+\begin{longtable}{>{\RR}p{3.6in}*{4}{c}}
+  \caption{2SLS first stage estimates for log wages} \\
+  \toprule
+    %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endfirsthead % End of first header
+  \multicolumn{2}{l}{\emph{... table \thetable{} continued}} \\ % pb header
+  \toprule
+  %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endhead % all headers finished
+  \bottomrule % putting in footer before content (way this table works)
+  \multicolumn{2}{r}{\emph{Continued on next page...}}\\ % pb footer
+  \endfoot % end of footer
+  \endlastfoot % since the footer won't change, we can just finish all footers
+  %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lwage_both_fsmat.csv'), rounding = 4,
+                  parenrows = fsparenrows, rnames = fsrnames, btmidrule = fsbtmidrule)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+\end{longtable}
+
+%% Log Wages: 2nd Stage table
+\begin{table}[!hb]
+{\footnotesize
+  \caption{2SLS second stage estimates for log wages}
+  \begin{tabularx}{\linewidth}{X*{8}{c}}
+    \toprule
+    %% Year headers
+    & \multicolumn{2}{c}{2007} & \multicolumn{2}{c}{2008}
+    & \multicolumn{2}{c}{2009} & \multicolumn{2}{c}{2010} \\
+    \cmidrule(r){2-3}\cmidrule(r){4-5}\cmidrule(r){6-7}\cmidrule(r){8-9}
+    %% Model headers
+    & OLS & IV & OLS & IV & OLS & IV & OLS & IV \\
+    \midrule
+    %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lwage_both_ssmat.csv'), rounding = 3,
+                  parenrows = ssparenrows, rnames = ssrnames)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+  \end{tabularx}}
+\end{table}
+
+\clearpage
+
+%% -----------------------------------------------------------------------------
+%% Men
+%% -----------------------------------------------------------------------------
+
+%% Log Wages: 1st stage table
+\begin{longtable}{>{\RR}p{3.6in}*{4}{c}}
+  \caption{2SLS first stage estimates for log wages (MEN)} \\
+  \toprule
+    %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endfirsthead % End of first header
+  \multicolumn{2}{l}{\emph{... table \thetable{} continued}} \\ % pb header
+  \toprule
+  %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endhead % all headers finished
+  \bottomrule % putting in footer before content (way this table works)
+  \multicolumn{2}{r}{\emph{Continued on next page...}}\\ % pb footer
+  \endfoot % end of footer
+  \endlastfoot % since the footer won't change, we can just finish all footers
+  %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lwage_males_fsmat.csv'), rounding = 4,
+                  parenrows = fsparenrows, rnames = fsrnames, btmidrule = fsbtmidrule)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+\end{longtable}
+
+%% Log Wages: 2nd Stage table
+\begin{table}[!hb]
+{\footnotesize
+  \caption{2SLS second stage estimates for log wages (MEN)}
+  \begin{tabularx}{\linewidth}{X*{8}{c}}
+    \toprule
+    %% Year headers
+    & \multicolumn{2}{c}{2007} & \multicolumn{2}{c}{2008}
+    & \multicolumn{2}{c}{2009} & \multicolumn{2}{c}{2010} \\
+    \cmidrule(r){2-3}\cmidrule(r){4-5}\cmidrule(r){6-7}\cmidrule(r){8-9}
+    %% Model headers
+    & OLS & IV & OLS & IV & OLS & IV & OLS & IV \\
+    \midrule
+    %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lwage_males_ssmat.csv'), rounding = 3,
+                  parenrows = ssparenrows, rnames = ssrnames)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+  \end{tabularx}}
+\end{table}
+
+\clearpage
+
+%% -----------------------------------------------------------------------------
+%% Women
+%% -----------------------------------------------------------------------------
+
+%% Log Wages: 1st stage table
+\begin{longtable}{>{\RR}p{3.6in}*{4}{c}}
+  \caption{2SLS first stage estimates for log wages (WOMEN)} \\
+  \toprule
+    %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endfirsthead % End of first header
+  \multicolumn{2}{l}{\emph{... table \thetable{} continued}} \\ % pb header
+  \toprule
+  %% Year headers
+    & 2007 & 2008 & 2009 & 2010 \\
+  \midrule
+  \endhead % all headers finished
+  \bottomrule % putting in footer before content (way this table works)
+  \multicolumn{2}{r}{\emph{Continued on next page...}}\\ % pb footer
+  \endfoot % end of footer
+  \endlastfoot % since the footer won't change, we can just finish all footers
+  %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lwage_females_fsmat.csv'), rounding = 4,
+                  parenrows = fsparenrows, rnames = fsrnames, btmidrule = fsbtmidrule)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+\end{longtable}
+
+%% Log Wages: 2nd Stage table
+\begin{table}[!hb]
+{\footnotesize
+  \caption{2SLS second stage estimates for log wages (WOMEN)}
+  \begin{tabularx}{\linewidth}{X*{8}{c}}
+    \toprule
+    %% Year headers
+    & \multicolumn{2}{c}{2007} & \multicolumn{2}{c}{2008}
+    & \multicolumn{2}{c}{2009} & \multicolumn{2}{c}{2010} \\
+    \cmidrule(r){2-3}\cmidrule(r){4-5}\cmidrule(r){6-7}\cmidrule(r){8-9}
+    %% Model headers
+    & OLS & IV & OLS & IV & OLS & IV & OLS & IV \\
+    \midrule
+    %% table content (R)
+<<results = 'asis'>>=
+## read in table
+outmat <- csv2tex(paste0(estdir, 'lwage_females_ssmat.csv'), rounding = 3,
+                  parenrows = ssparenrows, rnames = ssrnames)
+
+## write out content
+writeLines(outmat)
+@
+\bottomrule
+  \end{tabularx}}
+\end{table}
+
+\clearpage
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% End document
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
